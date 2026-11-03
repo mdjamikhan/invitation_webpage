@@ -317,7 +317,7 @@
         </div>
         <div class="day-location">
           <p class="eyebrow">निवास स्थान पर</p>
-          <h4>श्री भगवान साहनी का निवास</h4>
+          <h4>श्री भगवान साहनी</h4>
           <p>ग्राम-धुमनगर, वार्ड नं0-04<br>पो0-नरकटियागंज, थाना-शिकारपुर<br>(प0 चम्पारण)</p>
           <a class="btn-map" href="https://www.google.com/maps?q=27.1034806,84.4532217" target="_blank" rel="noopener noreferrer"><span>स्थान खोजें ↗</span></a>
         </div>
@@ -329,7 +329,7 @@
         <p class="day-month">शनिवार · नवम्बर 2026 · कार्तिक शुदी द्वादशी</p>
         <p class="day-title">शुभ विवाह</p>
         <div class="event-row">
-          <span class="event-name">घुरचड़ी / बारात प्रस्थान</span>
+          <span class="event-name">बारात प्रस्थान</span>
           <time class="event-time">शाम 5:00 बजे</time>
         </div>
         <div class="event-row">
@@ -370,11 +370,6 @@
         "वसुंधरा, काजल, प्रियंका, हिमांशी, लवली, दिव्यांश"
       </p>
     </div>
-
-    <p class="ceremonies-note">
-      सभी समय भारतीय मानक समय (IST) के अनुसार हैं। बारात एवं घुरचड़ी धुमनगर निवास से प्रस्थान करेगी।
-      अतिथिगण विवाह भवन में शाम 7:00 बजे से पधार सकते हैं।
-    </p>
   </section>
 
   <!-- VENUES -->
@@ -564,7 +559,7 @@ function drawSP(){
 
 /* --- 3D Mandap --- */
 function drawMandap(){
-  const B=Math.min(W*0.5, H*0.5)*.55;
+  const B = Math.min(W * 0.5, H * 0.5) * 0.55;
   const pH=B*1.5;
   const fade=t=>Math.min(1,Math.max(0,t));
 
@@ -781,19 +776,30 @@ function loop(){
   requestAnimationFrame(loop);
   t++; ry+=.01;
 
-  // ---- Centred camera with proper vertical offset ----
-  // Mandap height: base(y=0) → OM above spire(y≈-B*3.8)
-  // B = min(cx,cy)*0.55 — we approximate B at current screen size
-  const bApprox = Math.min(W, H) * 0.275; // ≈ min(cx,cy)*0.55
-  // Place visual centre at mandap's mid-height (~-B*1.9)
-  // which means cy must be pushed DOWN by bApprox*1.9 from the top of the mandap
-  // → anchor cy at screen_centre + bApprox*0.6 so mandap is vertically centred
-  cy = H * 0.5 + bApprox * 0.6;
-  cx = W * 0.5;   // always horizontal centre
+  // ---- Exact vertical centering ----
+  // B (world units) matches drawMandap: min(W*0.5, H*0.5)*0.55
+  const B3d = Math.min(W * 0.5, H * 0.5) * 0.55;
+  // Mandap extents in world Y (positive = down in screen):
+  //   bottom of base = 0
+  //   top of OM      = -(pH + B*0.95 + B*1.25) = -(B*1.5 + B*2.2) = -B*3.7
+  const mandapTop    = -B3d * 3.75;  // highest point (world Y, negative = up)
+  const mandapBottom =  B3d * 0.08;  // base platform (just at 0)
+  const mandapMidY   = (mandapTop + mandapBottom) / 2; // ≈ -B*1.83
 
-  // Zoom: start at 60% (nothing clipped) → 100% over 80 frames
+  // With FOV=600, projected Y = cy + worldY * (600/(600+0)) ≈ cy + worldY
+  // We want mandap to fill vertically with 8% padding top & bottom:
+  const padding = H * 0.08;
+  // projected top    = cy + mandapTop    >= padding        → cy >= padding - mandapTop
+  // projected bottom = cy + mandapBottom <= H - padding    → cy <= H - padding - mandapBottom
+  // Use midpoint of the two constraints:
+  const cyMin = padding - mandapTop;         // ensures top is not clipped
+  const cyMax = H - padding - mandapBottom;  // ensures bottom is not clipped
+  cy = (cyMin + cyMax) / 2;                  // perfectly centred with even padding
+  cx = W * 0.5;
+
+  // Zoom: start at 65% (guaranteed no clip) → 100% over 80 frames
   const zoom = Math.min(1, t / 80);
-  const camScale = 0.6 + zoom * 0.4;
+  const camScale = 0.65 + zoom * 0.35;
 
   ctx.clearRect(0,0,W,H);
   drawBG();
